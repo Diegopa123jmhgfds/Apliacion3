@@ -1,0 +1,157 @@
+dependencies {
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.8.0'
+}
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/actionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_star" /> <!-- Usa una imagen de estrella aquí -->
+</RelativeLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <ImageView
+        android:id="@+id/petImageView"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@drawable/ic_pet" />
+
+    <TextView
+        android:id="@+id/petNameTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:textSize="18sp" />
+
+    <ImageButton
+        android:id="@+id/ratingButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:src="@drawable/ic_bone_empty" />
+</LinearLayout>
+class PetViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    val petImageView: ImageView = itemView.findViewById(R.id.petImageView)
+    val petNameTextView: TextView = itemView.findViewById(R.id.petNameTextView)
+    val ratingButton: ImageButton = itemView.findViewById(R.id.ratingButton)
+}
+class PetAdapter(
+    private val petList: List<Pet>,
+    private val onRatingClick: (Pet) -> Unit
+) : RecyclerView.Adapter<PetViewHolder>() {
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PetViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_pet, parent, false)
+        return PetViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: PetViewHolder, position: Int) {
+        val pet = petList[position]
+        holder.petNameTextView.text = pet.name
+        holder.petImageView.setImageResource(pet.imageResId)
+        holder.ratingButton.setImageResource(
+            if (pet.isRated) R.drawable.ic_bone_filled else R.drawable.ic_bone_empty
+        )
+
+        holder.ratingButton.setOnClickListener {
+            onRatingClick(pet)
+        }
+    }
+
+    override fun getItemCount(): Int = petList.size
+}
+class MainActivity : AppCompatActivity() {
+
+    private val pets = mutableListOf(
+        Pet("Bella", R.drawable.ic_pet, false),
+        Pet("Luna", R.drawable.ic_pet, false),
+        // Agrega más mascotas aquí
+    )
+
+    private val favoritePets = mutableListOf<Pet>()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = PetAdapter(pets) { pet ->
+            pet.isRated = !pet.isRated
+            (recyclerView.adapter as PetAdapter).notifyDataSetChanged()
+        }
+
+        val actionButton = findViewById<ImageButton>(R.id.actionButton)
+        actionButton.setOnClickListener {
+            val intent = Intent(this, FavoritePetsActivity::class.java)
+            intent.putParcelableArrayListExtra("favorite_pets", ArrayList(favoritePets))
+            startActivity(intent)
+        }
+    }
+}
+class FavoritePetsActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_favorite_pets)
+
+        val pets = intent.getParcelableArrayListExtra<Pet>("favorite_pets") ?: emptyList()
+
+        val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = PetAdapter(pets) { }
+
+        val backButton = findViewById<Button>(R.id.backButton)
+        backButton.setOnClickListener {
+            finish()
+        }
+    }
+}
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".FavoritePetsActivity">
+
+    <RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <Button
+        android:id="@+id/backButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Volver"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="16dp"/>
+</RelativeLayout>
+@Parcelize
+data class Pet(
+    val name: String,
+    val imageResId: Int,
+    var isRated: Boolean
+) : Parcelable
